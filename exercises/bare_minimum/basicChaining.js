@@ -11,16 +11,25 @@
 var fs = require('fs');
 var request = require('request');
 var Promise = require('bluebird');
+var promisify = require('./promisification');
+var readFileAsync = Promise.promisify(fs.readFile);
+var writeFileAsync = Promise.promisify(fs.writeFile);
 
 
 
 var fetchProfileAndWriteToFile = function(readFilePath, writeFilePath) {
-  // TODO
-  return fs.readFile(readFilePath)
-    .then(data => data.toString().split(/\n/)[0])
+
+  return readFileAsync(readFilePath)
+    .then(data => {
+      return data.toString().split(/\n/)[0]; 
+    })
     .then(username => {
-      return request(`https://api.github.com/users/:${username}`);
-    });
+      return promisify.getGitHubProfileAsync(username);
+    })
+    .then(profile => {
+      return writeFileAsync(writeFilePath, JSON.stringify(profile));
+    })
+    .then(console.log('Written'));
 };
 
 // Export these functions so we can test them
